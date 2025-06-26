@@ -2,12 +2,24 @@
 # 确保任何命令失败时立即退出
 set -e
 
-# --- 【已移除】我们不再需要在运行时进行克隆、安装和编译 ---
+# --- 一个在后台运行自动保存的函数 ---
+run_auto_save_in_background() {
+    while true; do
+        echo "[Auto-Save] Sleeping for ${AUTOSAVE_INTERVAL:-30} minutes..."
+        sleep "$((${AUTOSAVE_INTERVAL:-30} * 60))"
+        
+        echo "[Auto-Save] Waking up and saving data..."
+        /opt/scripts/save.sh
+        echo "[Auto-Save] Save process finished."
+    done
+}
+
+# 定义脚本目录
+SCRIPTS_DIR="/opt/scripts"
 
 # --- 步骤 1: 动态创建 config.yaml 文件 ---
 if [ -n "$CONFIG_YAML" ]; then
     echo "[Config] Found CONFIG_YAML secret. Creating config.yaml file..."
-    # 确保 SillyTavern 的主目录存在
     cd /home/node/app
     echo "$CONFIG_YAML" > ./config.yaml
 else
@@ -16,19 +28,8 @@ else
 fi
 
 # --- 步骤 2: 配置并恢复云存档 (后台任务) ---
-run_auto_save_in_background() {
-    while true; do
-        echo "[Auto-Save] Sleeping for ${AUTOSAVE_INTERVAL:-30} minutes..."
-        sleep "$((${AUTOSAVE_INTERVAL:-30} * 60))"
-        echo "[Auto-Save] Waking up and saving data..."
-        /opt/scripts/save.sh
-        echo "[Auto-Save] Save process finished."
-    done
-}
-
 if [ -n "$REPO_URL" ] && [ -n "$GITHUB_TOKEN" ]; then
     echo "[Cloud Save] Config detected, initializing..."
-    # 确保 data 目录存在
     mkdir -p /home/node/app/data
     cd /home/node/app/data
     /opt/scripts/config.sh "$REPO_URL" "$GITHUB_TOKEN"
@@ -42,5 +43,7 @@ fi
 # --- 步骤 3: 启动 SillyTavern 主程序 ---
 echo "[Main] All setup complete. Starting pre-compiled SillyTavern..."
 cd /home/node/app
-# 直接执行，不再需要任何编译
-exec tini -- node server.js
+
+# 【最终关键修复】在启动时，明确指定监听地址为 0.0.0.0
+# 这将允许 Koyeb 的健康检查成功通过
+exec tini -- node server.js --host 0.0.0.0
