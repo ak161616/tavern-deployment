@@ -44,6 +44,6 @@ fi
 echo "[Main] All setup complete. Starting pre-compiled SillyTavern..."
 cd /home/node/app
 
-# 【最终关键修复】在启动时，明确指定监听地址为 0.0.0.0
-# 这将允许 Koyeb 的健康检查成功通过
+# 【最终关键修复】在启动时，用命令行参数明确指定监听地址为 0.0.0.0
+# 这将覆盖任何默认行为，并允许 Koyeb 的健康检查成功通过
 exec tini -- node server.js --host 0.0.0.0
