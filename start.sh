@@ -1,33 +1,21 @@
 #!/bin/sh
+# 确保任何命令失败时立即退出
 set -e
 
-# --- 步骤 1: 动态克隆并安装 SillyTavern ---
-echo "[Deployment] Starting deployment process..."
-if [ -z "$(ls -A /home/node/app)" ]; then
-    echo "[Deployment] App directory is empty. Cloning SillyTavern..."
-    git clone -b staging --depth 1 https://github.com/SillyTavern/SillyTavern.git .
-    echo "[Deployment] Installing npm dependencies..."
-    npm i --no-audit --no-fund --loglevel=error --no-progress --omit=dev --force && npm cache clean --force
-    echo "[Deployment] Compiling frontend libraries..."
-    if [ -f "./docker/build-lib.js" ]; then
-        node "./docker/build-lib.js";
-    elif [ -f "./build-lib.js" ]; then
-        node "./build-lib.js";
-    fi
-else
-    echo "[Deployment] App directory already populated. Skipping clone and install."
-fi
+# --- 【已移除】我们不再需要在运行时进行克隆、安装和编译 ---
 
-# --- 步骤 2: 动态创建 config.yaml 文件 ---
+# --- 步骤 1: 动态创建 config.yaml 文件 ---
 if [ -n "$CONFIG_YAML" ]; then
     echo "[Config] Found CONFIG_YAML secret. Creating config.yaml file..."
-    echo "$CONFIG_YAML" > /home/node/app/config.yaml
+    # 确保 SillyTavern 的主目录存在
+    cd /home/node/app
+    echo "$CONFIG_YAML" > ./config.yaml
 else
     echo "[Config] CRITICAL: CONFIG_YAML secret not found."
     exit 1
 fi
 
-# --- 步骤 3: 配置并恢复云存档 (后台任务) ---
+# --- 步骤 2: 配置并恢复云存档 (后台任务) ---
 run_auto_save_in_background() {
     while true; do
         echo "[Auto-Save] Sleeping for ${AUTOSAVE_INTERVAL:-30} minutes..."
@@ -51,7 +39,8 @@ else
     echo "[Cloud Save] Warning: Secrets not found, skipping cloud save setup."
 fi
 
-# --- 步骤 4: 启动 SillyTavern 主程序 ---
-echo "[Main] All setup complete. Starting SillyTavern..."
+# --- 步骤 3: 启动 SillyTavern 主程序 ---
+echo "[Main] All setup complete. Starting pre-compiled SillyTavern..."
 cd /home/node/app
+# 直接执行，不再需要任何编译
 exec tini -- node server.js
