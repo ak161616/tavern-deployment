@@ -41,9 +41,9 @@ else
 fi
 
 # --- 步骤 3: 启动 SillyTavern 主程序 ---
-echo "[Main] All setup complete. Starting pre-compiled SillyTavern..."
+echo "[Main] All setup complete. Starting SillyTavern with increased memory..."
 cd /home/node/app
 
-# 【最终关键修复】在启动时，用命令行参数明确指定监听地址为 0.0.0.0
-# 这将覆盖任何默认行为，并允许 Koyeb 的健康检查成功通过
-exec tini -- node server.js --host 0.0.0.0
+# 【最终决定性修复】在启动最终的 node server 进程时，也为它增加内存上限
+# 这将确保它在运行时进行任何意外的编译任务时，都不会再因为内存不足而崩溃
+exec tini -- node --max-old-space-size=4096 server.js --host 0.0.0.0
