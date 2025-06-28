@@ -1,6 +1,6 @@
 name: Build and Publish Docker Image to GHCR
 
-# 触发条件：每当 main 分支有新的代码提交时，自动运行
+# 触发条件：每当 main 分支有新的代码提交的时候，自动运行
 on:
   push:
     branches: [ "main" ]
