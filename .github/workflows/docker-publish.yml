@@ -1,0 +1,38 @@
+name: Build and Publish Docker Image to GHCR
+
+# 触发条件：每当 main 分支有新的代码提交时，自动运行
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      # 步骤 1: 检出您的代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 步骤 2: 登录到 GitHub 容器仓库
+      - name: Log in to the GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          # 使用您在Hugging Face Secrets里用过的那个GITHUB_TOKEN即可
+          # 请确保这个TOKEN有 packages:write 权限
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 步骤 3: 构建并推送 Docker 镜像
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          # 我们将把镜像推送到 GitHub 容器仓库
+          push: true
+          # 镜像的标签格式：ghcr.io/您的GitHub用户名/您的仓库名:latest
+          tags: ghcr.io/${{ github.repository }}:latest
